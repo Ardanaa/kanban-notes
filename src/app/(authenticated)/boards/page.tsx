@@ -31,7 +31,6 @@ export default function BoardsPage() {
         <CreateBoardDialog />
       </header>
       <Suspense fallback={<div className="text-sm text-muted-foreground">Memuat board...</div>}>
-        {/* @ts-expect-error Server Component */}
         <BoardsLoader />
       </Suspense>
     </div>

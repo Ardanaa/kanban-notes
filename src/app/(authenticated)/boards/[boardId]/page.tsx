@@ -6,13 +6,19 @@ import { KanbanBoard } from "@/components/kanban/kanban-board";
 import type { BoardWithColumns } from "@/lib/database.types";
 import { getBoardWithRelations } from "@/server/board-service";
 
+type BoardPageParams = {
+  boardId: string;
+};
+
 export default async function BoardPage({
   params,
 }: {
-  params: { boardId: string };
+  params: Promise<BoardPageParams>;
 }) {
+  const { boardId } = await params;
+
   try {
-    const board = await getBoardWithRelations(params.boardId);
+    const board = await getBoardWithRelations(boardId);
 
     if (!board) {
       notFound();
