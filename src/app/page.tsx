@@ -1,191 +1,182 @@
-"use client";
-
-import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
-import Chat from "@/components/chat";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { checkEnvironmentVariables } from "@/lib/env-check";
+import Link from "next/link";
 import {
-  Copy,
-  CheckCircle,
-  AlertCircle,
-  Zap,
-  Database,
-  Shield,
-  ExternalLink,
-} from "lucide-react";
+  SignInButton,
+  SignedIn,
+  SignedOut,
+  UserButton,
+} from "@clerk/nextjs";
+import { ArrowRight, KanbanSquare, Sparkles, Users } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/theme-toggle";
-import Image from "next/image";
 
-export default function Home() {
-  const envStatus = checkEnvironmentVariables();
-
+export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-white to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
-      {/* Hero Section */}
-      <div className="text-center py-12 sm:py-16 relative px-4">
-        <div className="absolute top-4 right-4 sm:top-6 sm:right-6">
-          <div className="flex items-center gap-2 sm:gap-3">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:from-neutral-900 dark:via-neutral-950 dark:to-neutral-900">
+      <header className="sticky top-0 z-10 border-b bg-white/80 backdrop-blur dark:bg-neutral-950/80">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-4">
+          <div className="flex items-center gap-2">
+            <KanbanSquare className="h-5 w-5 text-primary" />
+            <span className="font-semibold tracking-tight">Kanban Notes</span>
+          </div>
+          <div className="flex items-center gap-3">
             <ThemeToggle />
             <SignedOut>
-              <SignInButton>
-                <Button size="sm" className="text-xs sm:text-sm">
-                  Sign In
-                </Button>
+              <SignInButton mode="modal">
+                <Button size="sm">Masuk</Button>
               </SignInButton>
             </SignedOut>
             <SignedIn>
-              <UserButton />
+              <UserButton afterSignOutUrl="/" />
             </SignedIn>
           </div>
         </div>
+      </header>
 
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-4 mb-4">
-          <Image
-            src="/codeguide-logo.png"
-            alt="CodeGuide Logo"
-            width={50}
-            height={50}
-            className="rounded-xl sm:w-[60px] sm:h-[60px]"
-          />
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 via-blue-500 to-blue-400 bg-clip-text text-transparent font-parkinsans">
-            CodeGuide Starter
-          </h1>
-        </div>
-        <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
-          Build faster with your AI coding agent
-        </p>
-      </div>
-
-      <main className="container mx-auto px-4 sm:px-6 pb-12 sm:pb-8 max-w-5xl">
-        {envStatus.allConfigured ? (
-          <div className="text-center mb-8">
-            <div className="text-4xl sm:text-5xl mb-2">🎉</div>
-            <div className="font-bold text-lg sm:text-xl mb-1">All Set!</div>
-            <div className="text-sm sm:text-base text-muted-foreground">
-              Ready for development
+      <main className="mx-auto flex w-full max-w-6xl flex-col gap-16 px-4 py-16">
+        <section className="grid gap-10 lg:grid-cols-2 lg:items-center">
+          <div className="space-y-6">
+            <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-sm text-primary">
+              <Sparkles className="h-4 w-4" /> Produktivitas dengan Kanban & AI
+            </div>
+            <h1 className="text-4xl font-bold leading-tight tracking-tight sm:text-5xl">
+              Kelola catatan proyek dan tugas Anda dengan tampilan Kanban modern.
+            </h1>
+            <p className="text-base text-muted-foreground sm:text-lg">
+              Kanban Notes memadukan Supabase, Clerk, dan Vercel AI SDK untuk
+              menghadirkan pengalaman mencatat yang real-time, aman, dan dibantu AI.
+              Susun board, atur kolom, dan gerakkan kartu dengan drag-and-drop yang mulus.
+            </p>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <SignedIn>
+                <Button asChild size="lg">
+                  <Link href="/dashboard">
+                    Buka dashboard <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </SignedIn>
+              <SignedOut>
+                <SignInButton mode="modal">
+                  <Button size="lg">
+                    Coba sekarang <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+                </SignInButton>
+              </SignedOut>
+              <Button variant="ghost" size="lg" asChild>
+                <Link href="#fitur">Lihat fitur utama</Link>
+              </Button>
             </div>
           </div>
-        ) : (
-          <>
-            <div className="text-center mb-6">
-              <div className="text-4xl sm:text-5xl mb-2">⚠️</div>
-              <div className="font-semibold text-lg sm:text-xl mb-1">
-                Setup Required
+          <div className="rounded-2xl border bg-white/70 p-6 shadow-xl dark:border-neutral-800 dark:bg-neutral-900/70">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Contoh board</span>
+                <span>Tim Project</span>
               </div>
-              <div className="text-sm sm:text-base text-muted-foreground">
-                Retrieve keys for environment variables
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
-              {/* Clerk */}
-              <div className="text-center p-3 sm:p-4 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/10 dark:to-indigo-900/10">
-                <div className="flex justify-center mb-3">
-                  {envStatus.clerk ? (
-                    <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
-                  ) : (
-                    <Shield className="w-6 h-6 sm:w-8 sm:h-8 text-blue-500" />
-                  )}
-                </div>
-                <div className="font-semibold mb-2 text-sm sm:text-base">
-                  Clerk Auth
-                </div>
-                <div className="text-xs text-muted-foreground mb-3">
-                  {envStatus.clerk ? "✓ Ready" : "Setup required"}
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    window.open("https://dashboard.clerk.com", "_blank")
-                  }
-                  className="w-full text-xs sm:text-sm"
-                >
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  Dashboard
-                </Button>
-              </div>
-
-              {/* Supabase */}
-              <div className="text-center p-3 sm:p-4 rounded-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/10 dark:to-emerald-900/10">
-                <div className="flex justify-center mb-3">
-                  {envStatus.supabase ? (
-                    <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
-                  ) : (
-                    <Database className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
-                  )}
-                </div>
-                <div className="font-semibold mb-2 text-sm sm:text-base">
-                  Supabase DB
-                </div>
-                <div className="text-xs text-muted-foreground mb-3">
-                  {envStatus.supabase ? "✓ Ready" : "Setup required"}
-                </div>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    window.open("https://supabase.com/dashboard", "_blank")
-                  }
-                  className="w-full text-xs sm:text-sm"
-                >
-                  <ExternalLink className="w-3 h-3 mr-1" />
-                  Dashboard
-                </Button>
-              </div>
-
-              {/* AI */}
-              <div className="text-center p-3 sm:p-4 rounded-lg bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/10 dark:to-pink-900/10 sm:col-span-2 md:col-span-1">
-                <div className="flex justify-center mb-3">
-                  {envStatus.ai ? (
-                    <CheckCircle className="w-6 h-6 sm:w-8 sm:h-8 text-green-500" />
-                  ) : (
-                    <Zap className="w-6 h-6 sm:w-8 sm:h-8 text-purple-500" />
-                  )}
-                </div>
-                <div className="font-semibold mb-2 text-sm sm:text-base">
-                  AI SDK
-                </div>
-                <div className="text-xs text-muted-foreground mb-3">
-                  {envStatus.ai ? "✓ Ready" : "Optional"}
-                </div>
-                <div className="grid grid-cols-2 gap-1 sm:gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      window.open("https://platform.openai.com", "_blank")
-                    }
-                    className="text-xs px-1 sm:px-2"
+              <div className="grid gap-4 md:grid-cols-3">
+                {[
+                  { name: "To Do", count: 3, color: "bg-sky-100" },
+                  { name: "In Progress", count: 2, color: "bg-amber-100" },
+                  { name: "Done", count: 5, color: "bg-emerald-100" },
+                ].map((column) => (
+                  <div
+                    key={column.name}
+                    className={`rounded-xl border border-transparent ${column.color} p-3 text-sm dark:bg-white/5`}
                   >
-                    OpenAI
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() =>
-                      window.open("https://console.anthropic.com", "_blank")
-                    }
-                    className="text-xs px-1 sm:px-2"
-                  >
-                    Anthropic
-                  </Button>
-                </div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{column.name}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {column.count} kartu
+                      </span>
+                    </div>
+                    <div className="mt-3 space-y-2 text-xs text-muted-foreground">
+                      <p>• Riset kebutuhan</p>
+                      <p>• Susun backlog</p>
+                      <p>• Review desain</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          </>
-        )}
+          </div>
+        </section>
 
-        {/* Chat Section */}
-        <SignedIn>
-          {envStatus.allConfigured && (
-            <div className="mt-6 sm:mt-8">
-              <Chat />
+        <section id="fitur" className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          <FeatureCard
+            title="Board & Kolom"
+            description="Susun proyek dalam board dengan kolom yang fleksibel. Gunakan drag-and-drop untuk mengatur ulang struktur kerja sesuai kebutuhan tim."
+          />
+          <FeatureCard
+            title="Kartu kaya konten"
+            description="Setiap kartu mendukung deskripsi lengkap dan pembaruan cepat. Gunakan AI untuk menulis, merangkum, atau memecah tugas besar."
+          />
+          <FeatureCard
+            title="Kolaborasi Aman"
+            description="Clerk menjaga autentikasi pengguna, sementara Supabase menyimpan data dengan RLS agar hanya pemilik board yang dapat mengaksesnya."
+          >
+            <div className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="h-4 w-4" /> Terintegrasi dengan Clerk & Supabase
             </div>
-          )}
-        </SignedIn>
+          </FeatureCard>
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-2 lg:items-center">
+          <div className="space-y-4">
+            <h2 className="text-2xl font-semibold tracking-tight">Alur kerja terpadu</h2>
+            <p className="text-muted-foreground">
+              Mulai dari landing page, pengguna diarahkan untuk login melalui Clerk.
+              Setelah itu, dashboard menampilkan semua board. Setiap board memuat
+              kolom, kartu, serta dukungan drag-and-drop yang langsung tersinkronisasi
+              ke database Supabase.
+            </p>
+            <ul className="list-disc space-y-2 pl-6 text-sm text-muted-foreground">
+              <li>Tambah board, kolom, dan kartu dengan satu klik.</li>
+              <li>Reorder kolom atau kartu, bahkan pindahkan kartu antar kolom.</li>
+              <li>Gunakan AI untuk mendapatkan deskripsi, ringkasan, dan saran tugas.</li>
+            </ul>
+          </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Teknologi utama</CardTitle>
+              <CardDescription>Stack yang mendukung performa dan skalabilitas.</CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-3 text-sm text-muted-foreground">
+              <div>
+                <span className="font-medium text-foreground">Next.js App Router</span>
+                <p>Mengelola UI responsif dengan server actions dan streaming data.</p>
+              </div>
+              <div>
+                <span className="font-medium text-foreground">Supabase + Clerk</span>
+                <p>Autentikasi aman dengan RLS untuk setiap board, kolom, dan kartu.</p>
+              </div>
+              <div>
+                <span className="font-medium text-foreground">Vercel AI SDK</span>
+                <p>Asisten AI kontekstual langsung dari dialog kartu.</p>
+              </div>
+            </CardContent>
+          </Card>
+        </section>
       </main>
     </div>
   );
 }
+
+type FeatureCardProps = {
+  title: string;
+  description: string;
+  children?: React.ReactNode;
+};
+
+function FeatureCard({ title, description, children }: FeatureCardProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">{title}</CardTitle>
+        <CardDescription>{description}</CardDescription>
+      </CardHeader>
+      {children && <CardContent>{children}</CardContent>}
+    </Card>
+  );
+}
+

@@ -1,7 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Parkinsans } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+
 import { ThemeProvider } from "@/components/theme-provider";
+import { Toaster } from "@/components/ui/sonner";
+
 import "./globals.css";
 
 const geistSans = Geist({
@@ -20,9 +23,9 @@ const parkinsans = Parkinsans({
 });
 
 export const metadata: Metadata = {
-  title: "CodeGuide Starter Kit",
+  title: "Kanban Notes",
   description:
-    "A modern Next.js starter with TypeScript, TailwindCSS, shadcn/ui, Vercel AI SDK, Clerk, and Supabase",
+    "Aplikasi Kanban Notes dengan Next.js, Supabase, Clerk, dan Vercel AI SDK",
 };
 
 export default function RootLayout({
@@ -43,6 +46,7 @@ export default function RootLayout({
             disableTransitionOnChange
           >
             {children}
+            <Toaster richColors closeButton position="top-right" />
           </ThemeProvider>
         </body>
       </html>

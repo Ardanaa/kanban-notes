@@ -54,7 +54,7 @@ export function getSetupInstructions() {
     },
     {
       service: "OpenAI",
-      description: "AI language model for chat functionality",
+      description: "AI assistant for Kanban cards",
       steps: [
         "Go to https://platform.openai.com/",
         "Create an API key",

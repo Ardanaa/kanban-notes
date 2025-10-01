@@ -1,180 +1,161 @@
--- Example migration showing RLS implementation for Clerk + Supabase integration
--- This creates sample tables with proper RLS policies based on Clerk user IDs
+-- Kanban Notes schema generated per tech-doc.md
 
--- Create a posts table as an example
-CREATE TABLE IF NOT EXISTS public.posts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  content TEXT,
-  user_id TEXT NOT NULL, -- This will store the Clerk user ID
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+create extension if not exists "pgcrypto";
+create extension if not exists "uuid-ossp";
 
--- Create a comments table as another example
-CREATE TABLE IF NOT EXISTS public.comments (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  post_id UUID NOT NULL REFERENCES public.posts(id) ON DELETE CASCADE,
-  content TEXT NOT NULL,
-  user_id TEXT NOT NULL, -- This will store the Clerk user ID
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Clean up legacy example tables when present
+DROP TABLE IF EXISTS public.private_notes CASCADE;
+DROP TABLE IF EXISTS public.collaborations CASCADE;
+DROP TABLE IF EXISTS public.comments CASCADE;
+DROP TABLE IF EXISTS public.posts CASCADE;
 
--- Create a profiles table for user-specific data
-CREATE TABLE IF NOT EXISTS public.profiles (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id TEXT UNIQUE NOT NULL, -- This will store the Clerk user ID
-  bio TEXT,
-  website TEXT,
-  avatar_url TEXT,
-  is_public BOOLEAN DEFAULT false,
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
+-- Deterministic mapping between Clerk user IDs and UUID primary keys
+CREATE OR REPLACE FUNCTION public.clerk_id_to_uuid(clerk_id text)
+RETURNS uuid
+LANGUAGE sql
+IMMUTABLE
+STRICT
+AS $$
+  SELECT uuid_generate_v5('6ba7b814-9dad-11d1-80b4-00c04fd430c8'::uuid, clerk_id);
+$$;
 
--- Enable Row Level Security on all tables
-ALTER TABLE public.posts ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.comments ENABLE ROW LEVEL SECURITY;
-ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for posts table
--- Users can read all posts (public access)
-CREATE POLICY "Anyone can read posts" ON public.posts
-  FOR SELECT USING (true);
-
--- Users can only insert posts as themselves
-CREATE POLICY "Users can insert own posts" ON public.posts
-  FOR INSERT WITH CHECK (auth.jwt() ->> 'sub' = user_id);
-
--- Users can only update their own posts
-CREATE POLICY "Users can update own posts" ON public.posts
-  FOR UPDATE USING (auth.jwt() ->> 'sub' = user_id);
-
--- Users can only delete their own posts
-CREATE POLICY "Users can delete own posts" ON public.posts
-  FOR DELETE USING (auth.jwt() ->> 'sub' = user_id);
-
--- RLS Policies for comments table
--- Users can read all comments (public access)
-CREATE POLICY "Anyone can read comments" ON public.comments
-  FOR SELECT USING (true);
-
--- Users can only insert comments as themselves
-CREATE POLICY "Users can insert own comments" ON public.comments
-  FOR INSERT WITH CHECK (auth.jwt() ->> 'sub' = user_id);
-
--- Users can only update their own comments
-CREATE POLICY "Users can update own comments" ON public.comments
-  FOR UPDATE USING (auth.jwt() ->> 'sub' = user_id);
-
--- Users can only delete their own comments
-CREATE POLICY "Users can delete own comments" ON public.comments
-  FOR DELETE USING (auth.jwt() ->> 'sub' = user_id);
-
--- RLS Policies for profiles table
--- Users can read public profiles or their own profile
-CREATE POLICY "Users can read public profiles or own profile" ON public.profiles
-  FOR SELECT USING (
-    is_public = true OR auth.jwt() ->> 'sub' = user_id
-  );
-
--- Users can only insert their own profile
-CREATE POLICY "Users can insert own profile" ON public.profiles
-  FOR INSERT WITH CHECK (auth.jwt() ->> 'sub' = user_id);
-
--- Users can only update their own profile
-CREATE POLICY "Users can update own profile" ON public.profiles
-  FOR UPDATE USING (auth.jwt() ->> 'sub' = user_id);
-
--- Users can only delete their own profile
-CREATE POLICY "Users can delete own profile" ON public.profiles
-  FOR DELETE USING (auth.jwt() ->> 'sub' = user_id);
-
--- Create indexes for better performance
-CREATE INDEX IF NOT EXISTS idx_posts_user_id ON public.posts(user_id);
-CREATE INDEX IF NOT EXISTS idx_posts_created_at ON public.posts(created_at DESC);
-CREATE INDEX IF NOT EXISTS idx_comments_post_id ON public.comments(post_id);
-CREATE INDEX IF NOT EXISTS idx_comments_user_id ON public.comments(user_id);
-CREATE INDEX IF NOT EXISTS idx_profiles_user_id ON public.profiles(user_id);
-
--- Create updated_at triggers
-CREATE OR REPLACE FUNCTION update_updated_at_column()
-RETURNS TRIGGER AS $$
+-- Generic trigger for updated_at timestamps
+CREATE OR REPLACE FUNCTION public.set_current_timestamp()
+RETURNS trigger AS $$
 BEGIN
-  NEW.updated_at = NOW();
+  NEW.updated_at = now();
   RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
 
-CREATE TRIGGER update_posts_updated_at
-  BEFORE UPDATE ON public.posts
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_comments_updated_at
-  BEFORE UPDATE ON public.comments
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
-CREATE TRIGGER update_profiles_updated_at
-  BEFORE UPDATE ON public.profiles
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
-
--- Example of more complex RLS policy with additional conditions
--- Create a private_notes table that's completely private to each user
-CREATE TABLE IF NOT EXISTS public.private_notes (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  title TEXT NOT NULL,
-  content TEXT,
-  user_id TEXT NOT NULL, -- This will store the Clerk user ID
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS public.profiles (
+  id uuid PRIMARY KEY,
+  email text NOT NULL,
+  full_name text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
-ALTER TABLE public.private_notes ENABLE ROW LEVEL SECURITY;
-
--- Private notes can only be accessed by the owner
-CREATE POLICY "Users can only access own private notes" ON public.private_notes
-  FOR ALL USING (auth.jwt() ->> 'sub' = user_id);
-
--- Example of collaborative table with shared access
-CREATE TABLE IF NOT EXISTS public.collaborations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  description TEXT,
-  owner_id TEXT NOT NULL, -- Clerk user ID of the owner
-  collaborators TEXT[] DEFAULT '{}', -- Array of Clerk user IDs
-  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+CREATE TABLE IF NOT EXISTS public.boards (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  name text NOT NULL,
+  description text,
+  user_id uuid NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE
 );
 
-ALTER TABLE public.collaborations ENABLE ROW LEVEL SECURITY;
+CREATE TABLE IF NOT EXISTS public.columns (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  name text NOT NULL,
+  position integer NOT NULL DEFAULT 0,
+  board_id uuid NOT NULL REFERENCES public.boards(id) ON DELETE CASCADE
+);
 
--- Owners and collaborators can read
-CREATE POLICY "Owners and collaborators can read collaborations" ON public.collaborations
-  FOR SELECT USING (
-    auth.jwt() ->> 'sub' = owner_id OR 
-    auth.jwt() ->> 'sub' = ANY(collaborators)
+CREATE TABLE IF NOT EXISTS public.cards (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  title text NOT NULL,
+  content text,
+  position integer NOT NULL DEFAULT 0,
+  column_id uuid NOT NULL REFERENCES public.columns(id) ON DELETE CASCADE
+);
+
+-- Updated_at triggers
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_profiles'
+  ) THEN
+    CREATE TRIGGER set_timestamp_profiles BEFORE UPDATE ON public.profiles
+      FOR EACH ROW EXECUTE FUNCTION public.set_current_timestamp();
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_boards'
+  ) THEN
+    CREATE TRIGGER set_timestamp_boards BEFORE UPDATE ON public.boards
+      FOR EACH ROW EXECUTE FUNCTION public.set_current_timestamp();
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_columns'
+  ) THEN
+    CREATE TRIGGER set_timestamp_columns BEFORE UPDATE ON public.columns
+      FOR EACH ROW EXECUTE FUNCTION public.set_current_timestamp();
+  END IF;
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_trigger WHERE tgname = 'set_timestamp_cards'
+  ) THEN
+    CREATE TRIGGER set_timestamp_cards BEFORE UPDATE ON public.cards
+      FOR EACH ROW EXECUTE FUNCTION public.set_current_timestamp();
+  END IF;
+END $$;
+
+-- Indexes to support ordered queries
+CREATE INDEX IF NOT EXISTS idx_boards_user_id ON public.boards(user_id);
+CREATE INDEX IF NOT EXISTS idx_columns_board_position ON public.columns(board_id, position);
+CREATE INDEX IF NOT EXISTS idx_cards_column_position ON public.cards(column_id, position);
+
+-- Enable RLS
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.boards ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.columns ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cards ENABLE ROW LEVEL SECURITY;
+
+-- Profiles policies: owner can manage their row
+CREATE POLICY profiles_select ON public.profiles
+  FOR SELECT
+  USING (id = clerk_id_to_uuid(auth.jwt() ->> 'sub'));
+
+CREATE POLICY profiles_upsert ON public.profiles
+  FOR ALL
+  USING (id = clerk_id_to_uuid(auth.jwt() ->> 'sub'))
+  WITH CHECK (id = clerk_id_to_uuid(auth.jwt() ->> 'sub'));
+
+-- Boards policies: owner-only access
+CREATE POLICY boards_owner_crud ON public.boards
+  FOR ALL
+  USING (user_id = clerk_id_to_uuid(auth.jwt() ->> 'sub'))
+  WITH CHECK (user_id = clerk_id_to_uuid(auth.jwt() ->> 'sub'));
+
+-- Columns policies: owner of parent board
+CREATE POLICY columns_owner_crud ON public.columns
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.boards b
+      WHERE b.id = board_id
+        AND b.user_id = clerk_id_to_uuid(auth.jwt() ->> 'sub')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.boards b
+      WHERE b.id = board_id
+        AND b.user_id = clerk_id_to_uuid(auth.jwt() ->> 'sub')
+    )
   );
 
--- Only owners can insert
-CREATE POLICY "Owners can insert collaborations" ON public.collaborations
-  FOR INSERT WITH CHECK (auth.jwt() ->> 'sub' = owner_id);
-
--- Only owners can update
-CREATE POLICY "Owners can update collaborations" ON public.collaborations
-  FOR UPDATE USING (auth.jwt() ->> 'sub' = owner_id);
-
--- Only owners can delete
-CREATE POLICY "Owners can delete collaborations" ON public.collaborations
-  FOR DELETE USING (auth.jwt() ->> 'sub' = owner_id);
-
-CREATE INDEX IF NOT EXISTS idx_collaborations_owner_id ON public.collaborations(owner_id);
-CREATE INDEX IF NOT EXISTS idx_collaborations_collaborators ON public.collaborations USING GIN(collaborators);
-
-CREATE TRIGGER update_collaborations_updated_at
-  BEFORE UPDATE ON public.collaborations
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+-- Cards policies: owner of parent board via column
+CREATE POLICY cards_owner_crud ON public.cards
+  FOR ALL
+  USING (
+    EXISTS (
+      SELECT 1
+      FROM public.columns c
+      JOIN public.boards b ON b.id = c.board_id
+      WHERE c.id = column_id
+        AND b.user_id = clerk_id_to_uuid(auth.jwt() ->> 'sub')
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1
+      FROM public.columns c
+      JOIN public.boards b ON b.id = c.board_id
+      WHERE c.id = column_id
+        AND b.user_id = clerk_id_to_uuid(auth.jwt() ->> 'sub')
+    )
+  );

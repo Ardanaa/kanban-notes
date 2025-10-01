@@ -1,186 +1,103 @@
-[![CodeGuide](/codeguide-backdrop.svg)](https://codeguide.dev)
+# Kanban Notes
 
-# CodeGuide Starter Kit
-
-A modern web application starter template built with Next.js 15, featuring authentication, database integration, AI capabilities, and dark mode support.
-
-## Tech Stack
-
-- **Framework:** [Next.js 15](https://nextjs.org/) (App Router)
-- **Language:** TypeScript
-- **Authentication:** [Clerk](https://clerk.com/)
-- **Database:** [Supabase](https://supabase.com/)
-- **Styling:** [Tailwind CSS v4](https://tailwindcss.com/)
-- **UI Components:** [shadcn/ui](https://ui.shadcn.com/)
-- **AI Integration:** [Vercel AI SDK](https://sdk.vercel.ai/)
-- **Theme System:** [next-themes](https://github.com/pacocoursey/next-themes)
-
-## Prerequisites
-
-Before you begin, ensure you have the following:
-- Node.js 18+ installed
-- A [Clerk](https://clerk.com/) account for authentication
-- A [Supabase](https://supabase.com/) account for database
-- Optional: [OpenAI](https://platform.openai.com/) or [Anthropic](https://console.anthropic.com/) API key for AI features
-- Generated project documents from [CodeGuide](https://codeguide.dev/) for best development experience
-
-## Getting Started
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd codeguide-starter-kit
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   # or
-   yarn install
-   # or
-   pnpm install
-   ```
-
-3. **Environment Variables Setup**
-   - Copy the `.env.example` file to `.env.local`:
-     ```bash
-     cp .env.example .env.local
-     ```
-   - Fill in the environment variables in `.env.local` (see Configuration section below)
-
-4. **Start the development server**
-   ```bash
-   npm run dev
-   # or
-   yarn dev
-   # or
-   pnpm dev
-   ```
-
-5. **Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.**
-
-The homepage includes a setup dashboard with direct links to configure each service.
-
-## Configuration
-
-### Clerk Setup
-1. Go to [Clerk Dashboard](https://dashboard.clerk.com/)
-2. Create a new application
-3. Go to API Keys
-4. Copy the `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`
-
-### Supabase Setup
-1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
-2. Create a new project
-3. Go to Authentication → Integrations → Add Clerk (for third-party auth)
-4. Go to Project Settings > API
-5. Copy the `Project URL` as `NEXT_PUBLIC_SUPABASE_URL`
-6. Copy the `anon` public key as `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-
-### AI Integration Setup (Optional)
-1. Go to [OpenAI Platform](https://platform.openai.com/) or [Anthropic Console](https://console.anthropic.com/)
-2. Create an API key
-3. Add to your environment variables
-
-## Environment Variables
-
-Create a `.env.local` file in the root directory with the following variables:
-
-```env
-# Clerk Authentication
-NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=your_publishable_key
-CLERK_SECRET_KEY=your_secret_key
-
-# Supabase
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-
-# AI Integration (Optional)
-OPENAI_API_KEY=your_openai_api_key
-ANTHROPIC_API_KEY=your_anthropic_api_key
-```
+A Kanban-style project notes application built with Next.js 15, Supabase, Clerk, shadcn/ui, dnd-kit, and the Vercel AI SDK. Manage boards, columns, and cards with full CRUD support, drag-and-drop interactions, and an AI assistant that helps generate and summarize card content.
 
 ## Features
 
-- 🔐 Authentication with Clerk (middleware protection)
-- 🗄️ Supabase Database with third-party auth integration
-- 🤖 AI Chat Interface with OpenAI/Anthropic support
-- 🎨 40+ shadcn/ui components (New York style)
-- 🌙 Dark mode with system preference detection
-- 🎯 Built-in setup dashboard with service status
-- 🚀 App Router with Server Components
-- 🔒 Row Level Security examples with Clerk user IDs
-- 📱 Responsive design with TailwindCSS v4
-- 🎨 Custom fonts (Geist Sans, Geist Mono, Parkinsans)
+- Clerk authentication with protected dashboard and board routes
+- Boards, columns, and cards persisted in Supabase with RLS tied to Clerk users
+- Drag-and-drop column and card reordering powered by dnd-kit
+- AI assistant (OpenAI via Vercel AI SDK) for generating descriptions, summaries, and task suggestions
+- Responsive shadcn/ui interface with dark mode
+- Deterministic UUID bridge between Clerk IDs and Supabase records
+
+## Tech Stack
+
+- **Framework:** Next.js 15 (App Router, Server Actions)
+- **Database:** Supabase (PostgreSQL + Row Level Security)
+- **Auth:** Clerk
+- **UI:** Tailwind CSS v4 & shadcn/ui
+- **Drag & Drop:** @dnd-kit/core & @dnd-kit/sortable
+- **AI:** Vercel AI SDK with OpenAI models
+
+## Getting Started
+
+1. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+2. **Configure environment variables**
+   ```bash
+   cp .env.example .env.local
+   ```
+   Fill in the values for Clerk, Supabase, and optionally `OPENAI_API_KEY` / `ANTHROPIC_API_KEY`.
+
+3. **Apply the Supabase schema**
+   - Run the SQL in `supabase/migrations/001_example_tables_with_rls.sql` on your project.
+   - The migration sets up `profiles`, `boards`, `columns`, and `cards` with RLS policies mapped to Clerk users via deterministic UUIDs.
+
+4. **Start the app**
+If you cannot configure the Clerk Supabase template immediately, supply `SUPABASE_SERVICE_ROLE_KEY` locally so dashboard data can load.
+   ```bash
+   npm run dev
+   ```
+   Visit [http://localhost:3000](http://localhost:3000) to view the marketing page, then sign in to reach the dashboard.
+
+## Supabase + Clerk Notes
+
+- `profiles.id` is derived from the Clerk user ID using a UUID v5 helper to preserve referential integrity while keeping RLS policies simple.
+- RLS policies ensure only the board owner can read/write the associated columns and cards.
+- Server actions under `src/server/board-service.ts` encapsulate all Supabase access and revalidation logic.
+ - The server can fall back to `SUPABASE_SERVICE_ROLE_KEY` when Clerk-issued Supabase tokens are unavailable; keep this key server-side only.
+ - Local development requires setting `SUPABASE_SERVICE_ROLE_KEY` unless you have configured the Clerk "supabase" JWT template.
+
+## AI Assistant
+
+The card dialog includes an “Asisten AI” panel that calls `/api/ai` (Vercel AI SDK with OpenAI). Buttons allow you to:
+- **Buat deskripsi** – generate a description from the card title.
+- **Ringkas konten** – summarize the current description (requires existing content).
+- **Saran tugas** – propose actionable subtasks appended to the description.
+
+Provide `OPENAI_API_KEY` to enable these features; otherwise a friendly error is shown.
 
 ## Project Structure
 
 ```
-codeguide-starter-kit/
-├── src/
-│   ├── app/                    # Next.js app router pages
-│   │   ├── api/chat/          # AI chat API endpoint
-│   │   ├── globals.css        # Global styles with dark mode
-│   │   ├── layout.tsx         # Root layout with providers
-│   │   └── page.tsx           # Hero + setup dashboard
-│   ├── components/            # React components
-│   │   ├── ui/                # shadcn/ui components (40+)
-│   │   ├── chat.tsx           # AI chat interface
-│   │   ├── theme-provider.tsx # Theme context
-│   │   └── theme-toggle.tsx   # Dark mode toggle
-│   ├── lib/                   # Utility functions
-│   │   ├── supabase.ts        # Supabase client with Clerk auth
-│   │   ├── user.ts            # User utilities
-│   │   ├── utils.ts           # General utilities
-│   │   └── env-check.ts       # Environment validation
-│   └── middleware.ts          # Clerk route protection
-├── supabase/
-│   └── migrations/            # Database migrations with RLS examples
-├── CLAUDE.md                  # AI coding agent documentation
-├── SUPABASE_CLERK_SETUP.md   # Integration setup guide
-└── components.json            # shadcn/ui configuration
+src/
+  app/
+    (authenticated)/
+      layout.tsx              # Shared layout for dashboard & boards
+      dashboard/page.tsx      # Board list + create/update/delete
+      boards/
+        page.tsx              # Boards index alias
+        [boardId]/
+          page.tsx            # Kanban board view
+          actions.ts          # Server actions for columns/cards
+          not-found.tsx
+    api/ai/route.ts           # Vercel AI SDK endpoint
+    layout.tsx                # Root providers (Clerk, theme, toaster)
+    page.tsx                  # Marketing/landing page
+  components/
+    dashboard/...            # Dashboard dialogs & grid
+    kanban/...               # Kanban board, columns, cards, AI UI
+    ui/...                   # shadcn/ui primitives
+  lib/
+    clerk-uuid.ts            # Clerk → UUID helper
+    database.types.ts        # Supabase row types
+    supabase.ts              # Supabase client factory
+    env-check.ts             # Landing page environment status
+  server/board-service.ts     # Supabase data operations & revalidation
+supabase/migrations/...       # Database schema + RLS
 ```
 
-## Database Integration
+## Scripts
 
-This starter includes modern Clerk + Supabase integration:
+- `npm run dev` – start the development server
+- `npm run build` – compile for production
+- `npm run start` – run the production build
+- `npm run lint` – lint the project
 
-- **Third-party auth** (not deprecated JWT templates)
-- **Row Level Security** policies using `auth.jwt() ->> 'sub'` for Clerk user IDs
-- **Example migrations** with various RLS patterns (user-owned, public/private, collaboration)
-- **Server-side client** with automatic Clerk token handling
+## License
 
-## AI Coding Agent Integration
-
-This starter is optimized for AI coding agents:
-
-- **`CLAUDE.md`** - Comprehensive project context and patterns
-- **Setup guides** with detailed integration steps
-- **Example migrations** with RLS policy templates
-- **Clear file structure** and naming conventions
-- **TypeScript integration** with proper type definitions
-
-## Documentation Setup
-
-To implement the generated documentation from CodeGuide:
-
-1. Create a `documentation` folder in the root directory:
-   ```bash
-   mkdir documentation
-   ```
-
-2. Place all generated markdown files from CodeGuide in this directory:
-   ```bash
-   # Example structure
-   documentation/
-   ├── project_requirements_document.md             
-   ├── app_flow_document.md
-   ├── frontend_guideline_document.md
-   └── backend_structure_document.md
-   ```
-
-3. These documentation files will be automatically tracked by git and can be used as a reference for your project's features and implementation details.
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
+This project is licensed under the MIT License.
