@@ -64,7 +64,7 @@ export default function LandingPage() {
                 </SignInButton>
               </SignedOut>
               <Button variant="ghost" size="lg" asChild>
-                <Link href="#fitur">Lihat fitur utama</Link>
+                <Link href="/guest">Continue as guest</Link>
               </Button>
             </div>
           </div>
