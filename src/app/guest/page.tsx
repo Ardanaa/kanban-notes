@@ -6,7 +6,7 @@ import { ArrowLeft, RefreshCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { GuestKanbanBoard, GuestBoardHandlers } from "@/components/guest/guest-kanban-board";
-import type { GuestBoard, GuestBoardsState } from "@/lib/guest/types";
+import type { GuestBoard, GuestBoardsState, GuestCard } from "@/lib/guest/types";
 
 function createId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -170,7 +170,7 @@ export default function GuestPage() {
               return;
             }
 
-            let movingCard: ReturnType<typeof createInitialBoard>["columns"][number]["cards"][number] | null = null;
+            let movingCard: GuestCard | null = null;
 
             const columnsWithoutCard = board.columns.map((column) => {
               if (column.id !== sourceColumnId) {
