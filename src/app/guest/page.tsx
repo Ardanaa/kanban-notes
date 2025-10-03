@@ -190,13 +190,15 @@ export default function GuestPage() {
               return;
             }
 
+            const cardToInsert = movingCard;
+
             board.columns = columnsWithoutCard.map((column) => {
               if (column.id !== targetColumnId) {
                 return column;
               }
 
               const map = new Map(column.cards.map((card) => [card.id, card] as const));
-              map.set(movingCard!.id, movingCard);
+              map.set(cardToInsert.id, cardToInsert);
 
               const ordered = orderedCardIds
                 .map((id) => map.get(id))
