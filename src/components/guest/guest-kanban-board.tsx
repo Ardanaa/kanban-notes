@@ -316,12 +316,16 @@ function GuestKanbanColumn({
               <Pencil className="h-4 w-4" /> Edit kolom
             </DropdownMenuItem>
             <DropdownMenuItem
-              onSelect={() =>
+              onSelect={() => {
+                if (isDeleting) {
+                  return;
+                }
+
                 startDelete(() => {
                   handlers.onDeleteColumn(boardId, column.id);
                   toast.success("Kolom dihapus");
-                })
-              }
+                });
+              }}
               className="flex items-center gap-2 text-destructive focus:text-destructive"
             >
               <Trash2 className="h-4 w-4" /> Hapus kolom
